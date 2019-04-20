@@ -1,0 +1,168 @@
+---
+title: "HW3"
+author: "Leo Hong"
+date: "April 19, 2019"
+output: 
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Step 1
+We are going to visualize the file climate spending. We use x=year and y=gcc_spending, categorized by department. We get rid of exponential numbers.
+
+
+```{r warning=FALSE, meassage=FALSE, error=FALSE, echo=FALSE}
+
+setwd('C:/Users/tmple/Desktop/BigData/assignment3')
+
+#installs tidyverse package
+
+library(tidyverse)
+
+
+#1. climate spending
+#visualize the file for climate spending
+climate_spending <-read_csv ('climate_spending.csv')
+options(scipen = 999)
+
+#plot the year on gcc_spending (group=department)
+ggplot(data=climate_spending, mapping=aes(x=year, y=gcc_spending, group=department))+geom_line()
+ggplot(data=climate_spending, mapping=aes(x=year, y=gcc_spending, color=department))+geom_line()
+```
+
+## Step 2
+We are going to visualize the file energy spending. We use x=year and y=energy spending, categorized by department. We get rid of exponential numbers
+
+```{r warning=FALSE, meassage=FALSE, error=FALSE, echo=FALSE}
+
+#2. energy spending
+#visualize the file for energy spending
+setwd('C:/Users/tmple/Desktop/BigData/assignment3')
+energy_spending <- read_csv ('energy_spending.csv')
+options(scipen = 999)
+
+#plot the year on energy_spending (group=department)
+ggplot(data=energy_spending, mapping=aes(x=year, y=energy_spending, group=department))+geom_line()
+ggplot(data=energy_spending, mapping=aes(x=year, y=energy_spending, color=department))+geom_line()
+```
+
+## Step 3
+We are going to visualize the file fed spending. Since there are 0 values, we need to delete rows with 0. After deleting 0, we get rid of exponential numbers.
+
+
+
+```{r warning=FALSE, meassage=FALSE, error=FALSE, echo=FALSE}
+
+
+#3. fed spending 
+#visualize the file for fed spending
+setwd('C:/Users/tmple/Desktop/BigData/assignment3')
+fed_r_d_spending <-read_csv ('fed_r_d_spending.csv')
+
+
+#Ok, it looks like we have to remove no value and round off (total outlays, discretionary outlays)
+#remove value 0 in rd_budget
+fed_r_d_spending$rd_budget[fed_r_d_spending$rd_budget == 0] <- NA
+fed_r_d_spending <- filter(fed_r_d_spending, !is.na(rd_budget))
+
+
+#let's round off ~~!
+options(scipen = 999)
+```
+## Step 4
+For fed_r_d_spending, we are going to compare variables with positive relationships followed by statistical proof for the relationships. 
+(a) y= gdp, x= rd_budget
+(b) y= gdp, x= total_outlays
+(c) y= gdp, x= discretionary_outlays
+For (a), p-value=0.004 and r^2= 0.015 indicate that they have a positive relationship. For (b), p-value=0.000 and r^2= 0.9743 indicate that they have a positive relationship. For (c), p-value=0.000, and r^2=0.93 indicate that they have a positive relationship.
+```{r warning=FALSE, meassage=FALSE, error=FALSE, echo=FALSE}
+
+
+#4. fed_r_d relationship
+#We are going to find variables that have relationship and show statistical proof
+  
+#plot the rd_budget on gdp(increase in rd_budget will have a positive effect on overall gdp)
+ggplot(data=fed_r_d_spending, mapping=aes(x=rd_budget, y=gdp, color=department ))+geom_line()
+# for statistical relationship between two variables
+linearmodel1 <- lm(gdp ~ rd_budget, data=fed_r_d_spending)
+print(linearmodel1)
+summary(linearmodel1)
+
+
+#plot the total_outlays on gdp (increase in total outlays will have a positive effect on gdp)
+ggplot(data=fed_r_d_spending, mapping=aes(x=total_outlays, y=gdp, color=year))+geom_line()
+# for statistical relationship between two variables
+linearmodel2 <-lm (gdp ~ total_outlays, data=fed_r_d_spending)
+summary(linearmodel2)
+
+#plot the total discretionary_outlays on gdp
+ggplot(data=fed_r_d_spending, mapping=aes(x=discretionary_outlays, y=gdp, color=year))+geom_line()
+#for statistical relationship between two variables
+linearmodel3 <-lm (gdp ~ discretionary_outlays, data=fed_r_d_spending)
+summary(linearmodel3)
+```
+## Step 5
+We are going to merge gcc_spending and energy_spending with fed_r_d. First, we will get rid of department from fed_r_d using distinct function. Second, we are going to get rid of department from energy_speding. Third, we will merge energy_spending with fed_r_d_new (by=year) and show statistical relationship (x=energy_spending, y=gdp). Our p-value=0.000 and r^2= 0.01 indicate tha they have a positive relationship although it is very weak.
+
+
+```{r warning=FALSE, meassage=FALSE, error=FALSE, echo=FALSE}
+
+
+#5. Merging gcc_spending and energy_spending with fed_r_d
+#we are goind to import energy_spending variable and gcc_spending variable into fed_r_d
+
+#Let's get rid of deparment from fed_r_d using "distinct" function
+fed_r_d_spending_new <- select(fed_r_d_spending, -department) %>%distinct
+
+
+#Let's get rid of department from energy_spending
+energy_spending_new <-select(energy_spending, -department) %>% distinct
+
+#merge energy_spending with fed_r_d_new
+fed_r_d_spending_new <-inner_join (fed_r_d_spending_new, energy_spending_new, by= "year")
+ggplot(data=fed_r_d_spending_new, mapping= aes(x=energy_spending, y=gdp, color=year))+geom_line()
+
+#linear statistical relationship (y=gdp, x=energy_spending)
+linearmodel4 <-lm(gdp ~ energy_spending, data=fed_r_d_spending_new)
+summary(linearmodel4)
+
+
+```
+## Step 6
+We are going to merge gcc_spending with fed_r_d_spending_new. We, first, get rid of department from climate_spending. Second, we merge climate_spending with fed_r_d_new (by=year). We show statistical relationship (y=gdp, x=gcc_spending). Our p-value=0.000 and r^2= 0.0001 indicate that they have a positive relationship. 
+
+
+```{r warning=FALSE, meassage=FALSE, error=FALSE, echo=FALSE}
+
+#6. Merging gcc_spending with fed_r_d_spending_new 
+#Let's get rid of department from climate_spending
+climate_spending_new <-select(climate_spending, -department) %>% distinct
+
+
+#merge climate_spending with fed_r_d_new
+fed_r_d_spending_new <-inner_join (fed_r_d_spending_new, climate_spending_new, by= "year")
+ggplot(data=fed_r_d_spending_new, mapping= aes(x=gcc_spending, y=gdp, color=year))+geom_line()
+
+#linear statistical relationship (y=gdp, x=gcc_spending)
+linearmodel5 <-lm(gdp ~ gcc_spending, data=fed_r_d_spending_new)
+summary (linearmodel5)
+```
+## Step 7
+Our last step is to find variables with no relationship. We believe that gcc_spending and energy_spending may not have significant relationship. Our p-value=0.521 and r^2= 2.163 indicate that gcc spending does not have any relationship with energy spending. 
+
+
+
+```{r warning=FALSE, meassage=FALSE, error=FALSE, echo=FALSE}
+
+#7. no relationship (I beleive that gcc_spending and energy_spending may not have relationship)
+  
+ggplot(data=fed_r_d_spending_new, mapping=aes(x=gcc_spending, y=energy_spending, color=year))+geom_line()
+linearmodel6 <-lm(gcc_spending~energy_spending, data=fed_r_d_spending_new)
+summary(linearmodel6)
+
+
+
